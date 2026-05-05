@@ -1,5 +1,5 @@
-import csv
 import os
+import csv
 from urllib.parse import urlparse
 
 import requests

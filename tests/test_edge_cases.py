@@ -110,14 +110,16 @@ class TestNLTKDataDownload:
         """Test preprocess_text uses cached lemmatizer/stopwords from __init__."""
         import src.eda_analysis as eda_mod
 
-        eda_mod.EDAAnalysis._nltk_ready = True  # Skip external NLTK setup in this unit test
+        eda_mod.EDAAnalysis._nltk_ready = (
+            True  # Skip external NLTK setup in this unit test
+        )
         mock_stopwords = SimpleNamespace(words=lambda _: ['the'])
         with patch.object(eda_mod, 'stopwords', mock_stopwords):
             with patch.object(eda_mod, 'word_tokenize', return_value=['cats', 'the']):
                 with patch.object(eda_mod, 'WordNetLemmatizer') as mock_lemma_cls:
                     mock_lemma = mock_lemma_cls.return_value
-                    mock_lemma.lemmatize.side_effect = (
-                        lambda word: word[:-1] if word.endswith('s') else word
+                    mock_lemma.lemmatize.side_effect = lambda word: (
+                        word[:-1] if word.endswith('s') else word
                     )
 
                     analysis = eda_mod.EDAAnalysis(

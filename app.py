@@ -31,7 +31,7 @@ st.set_page_config(
         
         Created by [Dimitris Zacharenakis](https://www.linkedin.com/in/zacharenakis)
         """
-    }
+    },
 )
 
 
@@ -78,10 +78,13 @@ def load_data(selected_courses, selected_years):
 
 
 # Main H1 heading for SEO
-st.markdown("""
+st.markdown(
+    """
 <h1 style='text-align: center; color: #C0526A;'>DataTalksClub Zoomcamp Projects Gallery</h1>
 <p style='text-align: center; color: #e0e0e0;'>Browse 2000+ past student projects from Data Engineering, ML, MLOps, and LLM Zoomcamp courses</p>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 st.sidebar.title(
     'Interactive [DataTalksClub](https://github.com/DataTalksClub) Course Projects Dashboard'

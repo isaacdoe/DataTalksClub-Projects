@@ -2,8 +2,8 @@ import os
 import re
 import time
 
-from openai import OpenAI
 from tqdm import tqdm
+from openai import OpenAI
 
 
 class OpenAIAPI:
@@ -169,12 +169,18 @@ Generate 5 distinct domain-focused titles, each on a new line:
                     if not is_last:
                         time.sleep(2)
                 else:
-                    print(f"❌ LLM error on {current_model} (attempt {attempt+1}/{max_retries}): {error_str[:200]}", flush=True)
+                    print(
+                        f"❌ LLM error on {current_model} (attempt {attempt+1}/{max_retries}): {error_str[:200]}",
+                        flush=True,
+                    )
                     if not is_last:
                         time.sleep(5)
 
                 if is_last:
-                    print(f"💀 All {max_retries} attempts failed for model queue {model_queue}", flush=True)
+                    print(
+                        f"💀 All {max_retries} attempts failed for model queue {model_queue}",
+                        flush=True,
+                    )
                     return None, None
         return None, None
 

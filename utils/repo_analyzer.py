@@ -6,8 +6,8 @@ Inspired by ZoomJudge approach but simplified for speed.
 import os
 import base64
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import unquote
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
@@ -147,7 +147,9 @@ class RepoAnalyzer:
             branches_to_try.append(branch)
         branches_to_try.extend(['main', 'master'])
         for b in branches_to_try:
-            url = f'https://api.github.com/repos/{owner}/{repo}/git/trees/{b}?recursive=1'
+            url = (
+                f'https://api.github.com/repos/{owner}/{repo}/git/trees/{b}?recursive=1'
+            )
             try:
                 resp = requests.get(url, headers=self.headers, timeout=15)
                 if resp.ok:
@@ -173,7 +175,9 @@ class RepoAnalyzer:
 
         return []
 
-    def fetch_file_content(self, owner: str, repo: str, path: str, ref: str = None) -> str:
+    def fetch_file_content(
+        self, owner: str, repo: str, path: str, ref: str = None
+    ) -> str:
         """Fetch content of a single file."""
         url = f'https://api.github.com/repos/{owner}/{repo}/contents/{path}'
         if ref:
@@ -234,7 +238,12 @@ class RepoAnalyzer:
         return False
 
     def fetch_key_files(
-        self, owner: str, repo: str, subpath: str = None, branch: str = None, max_files: int = 10
+        self,
+        owner: str,
+        repo: str,
+        subpath: str = None,
+        branch: str = None,
+        max_files: int = 10,
     ) -> dict:
         """Fetch content of key files from repository.
 
@@ -296,7 +305,14 @@ class RepoAnalyzer:
         owner, repo, subpath, branch = self.parse_github_url(github_url)
         if not owner or not repo:
             logger.error(f"Could not parse GitHub URL: {github_url}")
-            return {'files': {}, 'owner': None, 'repo': None, 'subpath': None, 'branch': None, 'not_found': False}
+            return {
+                'files': {},
+                'owner': None,
+                'repo': None,
+                'subpath': None,
+                'branch': None,
+                'not_found': False,
+            }
 
         files = self.fetch_key_files(owner, repo, subpath, branch)
 

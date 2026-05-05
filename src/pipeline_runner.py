@@ -51,7 +51,11 @@ class PipelineRunner:
         # Retry unknowns mode - run classify step on all existing courses
         if retry_unknowns:
             courses = self.discovery.discover_courses()
-            existing = [c for c in courses if (self.data_path / c['name'] / str(c['year']) / 'data.csv').exists()]
+            existing = [
+                c
+                for c in courses
+                if (self.data_path / c['name'] / str(c['year']) / 'data.csv').exists()
+            ]
             print(f"🔁 Retrying unknowns across {len(existing)} existing courses...")
             for course_info in existing:
                 print(f"\n{'='*50}")
@@ -62,17 +66,24 @@ class PipelineRunner:
         # Single course mode - bypass discovery so active courses work too
         if course and year:
             from utils.course_discovery import TRACKED_COURSES
-            slug_prefix = next((k for k, v in TRACKED_COURSES.items() if v == course), None)
+
+            slug_prefix = next(
+                (k for k, v in TRACKED_COURSES.items() if v == course), None
+            )
             if not slug_prefix:
-                print(f"❌ Unknown course name: {course}. Known: {list(TRACKED_COURSES.values())}")
+                print(
+                    f"❌ Unknown course name: {course}. Known: {list(TRACKED_COURSES.values())}"
+                )
                 return False
             slug = f"{slug_prefix}-{year}"
-            courses = [{
-                "name": course,
-                "year": year,
-                "slug": slug,
-                "url": f"{self.discovery.BASE_URL}/{slug}/projects",
-            }]
+            courses = [
+                {
+                    "name": course,
+                    "year": year,
+                    "slug": slug,
+                    "url": f"{self.discovery.BASE_URL}/{slug}/projects",
+                }
+            ]
         elif force_all:
             courses = self.discovery.discover_courses()
             print(f"🔄 Force mode: Processing ALL {len(courses)} courses")
@@ -175,8 +186,9 @@ def main():
     )
     parser.add_argument("--year", type=int, help="Process specific year (e.g., 2025)")
     parser.add_argument(
-        "--retry-unknowns", action="store_true",
-        help="Re-run classify step on all existing courses to fix unknowns"
+        "--retry-unknowns",
+        action="store_true",
+        help="Re-run classify step on all existing courses to fix unknowns",
     )
     parser.add_argument(
         "--workers", type=int, default=5, help="Parallel workers (default: 5)"
@@ -219,7 +231,9 @@ def main():
                 print("   export OPENROUTER_API_KEY='your_key'")
             sys.exit(1)
 
-    runner = PipelineRunner(limit=args.limit, project_url=args.project_url, workers=args.workers)
+    runner = PipelineRunner(
+        limit=args.limit, project_url=args.project_url, workers=args.workers
+    )
 
     if args.discover:
         runner.discover()

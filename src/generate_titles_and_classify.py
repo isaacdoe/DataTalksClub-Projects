@@ -190,7 +190,10 @@ def process_single_project(args):
         if (
             force_reprocess
             or pd.isnull(deployment_type)
-            or (isinstance(deployment_type, str) and deployment_type.strip().lower() == 'unknown')
+            or (
+                isinstance(deployment_type, str)
+                and deployment_type.strip().lower() == 'unknown'
+            )
         ):
             classification = openai_api.classify_deployment_and_cloud(
                 project_url, files_content, valid_deployment_types
@@ -207,8 +210,14 @@ def process_single_project(args):
         title_needs_gen = (
             force_reprocess
             or pd.isnull(existing_title)
-            or (isinstance(existing_title, str) and existing_title.strip().lower() in ('unknown', 'error'))
-            or (isinstance(existing_reason, str) and 'no files fetched' in existing_reason.lower())
+            or (
+                isinstance(existing_title, str)
+                and existing_title.strip().lower() in ('unknown', 'error')
+            )
+            or (
+                isinstance(existing_reason, str)
+                and 'no files fetched' in existing_reason.lower()
+            )
         )
         if title_needs_gen:
             combined_content = ""
@@ -231,13 +240,20 @@ def process_single_project(args):
                         result['project_title'] = best_title
                     else:
                         result['project_title'] = "Unknown"
-                        result['Reason'] = result.get('Reason', '') + " | Title: LLM returned no titles"
+                        result['Reason'] = (
+                            result.get('Reason', '')
+                            + " | Title: LLM returned no titles"
+                        )
                 else:
                     result['project_title'] = "Unknown"
-                    result['Reason'] = result.get('Reason', '') + " | Title: LLM summary failed"
+                    result['Reason'] = (
+                        result.get('Reason', '') + " | Title: LLM summary failed"
+                    )
             else:
                 result['project_title'] = "Unknown"
-                result['Reason'] = result.get('Reason', '') + " | Title: No content to summarize"
+                result['Reason'] = (
+                    result.get('Reason', '') + " | Title: No content to summarize"
+                )
 
         result['status'] = 'success'
         return index, result
@@ -266,8 +282,12 @@ def run_parallel(work_items, max_workers, csv_handler, counter, failed_urls):
                     index, result = future.result()
 
                     with _df_lock:
-                        csv_handler.df.at[index, 'project_title'] = result['project_title']
-                        csv_handler.df.at[index, 'Deployment Type'] = result['Deployment Type']
+                        csv_handler.df.at[index, 'project_title'] = result[
+                            'project_title'
+                        ]
+                        csv_handler.df.at[index, 'Deployment Type'] = result[
+                            'Deployment Type'
+                        ]
                         csv_handler.df.at[index, 'Reason'] = result['Reason']
                         csv_handler.df.at[index, 'Cloud'] = result['Cloud']
 
@@ -282,7 +302,11 @@ def run_parallel(work_items, max_workers, csv_handler, counter, failed_urls):
                         failed_urls.append((index, url))
 
                     pbar.set_postfix(
-                        {"✓": counter.success, "skip": counter.skip, "err": counter.error},
+                        {
+                            "✓": counter.success,
+                            "skip": counter.skip,
+                            "err": counter.error,
+                        },
                         refresh=True,
                     )
                     pbar.update(1)
@@ -337,10 +361,18 @@ def main():
             )
         print(f"🎯 Filtered to project: {project_url}")
         print("🔁 Force reprocessing enabled for this project URL")
-        output_columns = ['project_url', 'project_title', 'Deployment Type', 'Reason', 'Cloud']
+        output_columns = [
+            'project_url',
+            'project_title',
+            'Deployment Type',
+            'Reason',
+            'Cloud',
+        ]
         available_columns = [c for c in output_columns if c in csv_handler.df.columns]
         old_target_row = (
-            csv_handler.df.loc[normalized_series == normalized_target, available_columns]
+            csv_handler.df.loc[
+                normalized_series == normalized_target, available_columns
+            ]
             .iloc[0]
             .to_dict()
         )
@@ -437,8 +469,16 @@ def main():
         normalized_target = project_url.rstrip('/')
         target_rows = csv_handler.df[normalized_series == normalized_target]
         if not target_rows.empty:
-            output_columns = ['project_url', 'project_title', 'Deployment Type', 'Reason', 'Cloud']
-            available_columns = [c for c in output_columns if c in csv_handler.df.columns]
+            output_columns = [
+                'project_url',
+                'project_title',
+                'Deployment Type',
+                'Reason',
+                'Cloud',
+            ]
+            available_columns = [
+                c for c in output_columns if c in csv_handler.df.columns
+            ]
             target_row = target_rows.iloc[0][available_columns].to_dict()
             print("\n🎯 Single project result:")
             print(f"   URL: {project_url}")

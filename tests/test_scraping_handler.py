@@ -196,6 +196,7 @@ class TestScrapeData:
         assert csv_path.exists()
 
         import csv as csv_mod
+
         with open(csv_path, newline='', encoding='utf-8') as f:
             rows = list(csv_mod.reader(f))
         assert rows[0] == ['project_url', 'score']
@@ -281,6 +282,7 @@ class TestScrapeData:
         assert mock_get.call_args_list[1][0][0].endswith("?page=2")
 
         import csv as csv_mod
+
         csv_path = tmp_path / "testcourse" / "2026" / filenames[0]
         with open(csv_path, newline='', encoding='utf-8') as f:
             rows = list(csv_mod.reader(f))
@@ -312,6 +314,7 @@ class TestScrapeData:
         filenames = handler.scrape_data()
 
         import csv as csv_mod
+
         csv_path = tmp_path / "test" / "2026" / filenames[0]
         with open(csv_path, newline='', encoding='utf-8') as f:
             rows = list(csv_mod.reader(f))

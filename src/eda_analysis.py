@@ -6,8 +6,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from nltk.stem import WordNetLemmatizer
 from wordcloud import WordCloud
-from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
+from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 
