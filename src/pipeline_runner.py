@@ -201,7 +201,7 @@ def main():
         if not os.environ.get("MY_GITHUB_TOKEN"):
             missing_vars.append("MY_GITHUB_TOKEN")
 
-        provider = os.environ.get("LLM_PROVIDER", "openrouter").lower()
+        provider = (os.environ.get("LLM_PROVIDER") or "openrouter").lower()
         if provider == "deepseek":
             if not os.environ.get("DEEPSEEK_API_KEY"):
                 missing_vars.append("DEEPSEEK_API_KEY")
