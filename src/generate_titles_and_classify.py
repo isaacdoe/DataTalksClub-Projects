@@ -34,12 +34,19 @@ def _check_env_vars():
     missing = []
     if not os.environ.get("MY_GITHUB_TOKEN"):
         missing.append("MY_GITHUB_TOKEN")
-    if not os.environ.get("OPENROUTER_API_KEY"):
-        missing.append("OPENROUTER_API_KEY")
+
+    provider = os.environ.get("LLM_PROVIDER", "openrouter").lower()
+    if provider == "deepseek":
+        if not os.environ.get("DEEPSEEK_API_KEY"):
+            missing.append("DEEPSEEK_API_KEY")
+    else:
+        if not os.environ.get("OPENROUTER_API_KEY"):
+            missing.append("OPENROUTER_API_KEY")
+
     if missing:
         raise EnvironmentError(
             f"Missing required environment variables: {', '.join(missing)}. "
-            "Set them before running: export MY_GITHUB_TOKEN='...' OPENROUTER_API_KEY='...'"
+            f"Set them before running. Provider: {provider}"
         )
 
 
@@ -351,7 +358,7 @@ def main():
 
     # Initialize APIs (these are thread-safe for read operations)
     repo_analyzer = RepoAnalyzer(os.environ.get('MY_GITHUB_TOKEN'))
-    openai_api = OpenAIAPI(os.environ.get('OPENROUTER_API_KEY'))
+    openai_api = OpenAIAPI()
 
     total = len(process_df)
     print(f"🚀 Processing {total} projects with {max_workers} parallel workers...")

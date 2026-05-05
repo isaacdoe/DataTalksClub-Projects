@@ -8,26 +8,60 @@ from tqdm import tqdm
 
 class OpenAIAPI:
     """
-    LLM API client using OpenRouter (compatible with OpenAI SDK).
-    Uses a free OpenRouter model by default.
+    LLM API client supporting multiple providers via LLM_PROVIDER env var.
+
+    Providers:
+    - openrouter (default): Uses OpenRouter API with free model fallbacks
+    - deepseek: Uses DeepSeek API with a single model
+
+    Set LLM_PROVIDER in .env or environment to switch providers.
     """
 
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
-        self.client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=self.api_key,
-            timeout=60.0,  # 60 second timeout for API calls
+        provider = os.environ.get("LLM_PROVIDER", "openrouter").lower()
+
+        if provider == "deepseek":
+            self._provider = "deepseek"
+            self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY")
+            self.client = OpenAI(
+                base_url="https://api.deepseek.com/v1",
+                api_key=self.api_key,
+                timeout=60.0,
+            )
+            self.default_model = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+            self.fallback_models = [self.default_model]
+        else:
+            # openrouter (default)
+            self._provider = "openrouter"
+            self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
+            self.client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=self.api_key,
+                timeout=60.0,
+            )
+            self.default_model = os.environ.get(
+                "OPENROUTER_MODEL", "openai/gpt-oss-120b:free"
+            )
+            self.fallback_models = [
+                self.default_model,
+                "openai/gpt-oss-20b:free",
+                "nvidia/nemotron-3-super-120b-a12b:free",
+                "google/gemma-3-27b-it:free",
+                "google/gemma-3-12b-it:free",
+            ]
+
+        # Print chosen provider info once at init time
+        masked_key = (
+            (self.api_key[:6] + "..." + self.api_key[-4:])
+            if self.api_key and len(self.api_key) > 10
+            else (self.api_key or "(not set)")
         )
-        # Free models with fallback order (5 models for better throughput)
-        self.default_model = os.environ.get("DEFAULT_MODEL", "openai/gpt-oss-120b:free")
-        self.fallback_models = [
-            self.default_model,
-            "openai/gpt-oss-20b:free",
-            "nvidia/nemotron-3-super-120b-a12b:free",
-            "google/gemma-3-27b-it:free",
-            "google/gemma-3-12b-it:free",
-        ]
+        tqdm.write(
+            f"[LLM] provider={self._provider} "
+            f"base_url={self.client.base_url} "
+            f"model={self.default_model} "
+            f"key={masked_key}"
+        )
 
     def build_prompt(self, project_url, summary, deployment_type=None):
         # Determine what tech terms are allowed based on deployment type
@@ -83,19 +117,33 @@ Generate 5 distinct domain-focused titles, each on a new line:
         for attempt in range(max_retries):
             current_model = model_queue[attempt % len(model_queue)]
             try:
-                response = self.client.chat.completions.create(
-                    extra_headers={
+                # OpenRouter requires HTTP-Referer/X-Title headers; DeepSeek does not
+                kwargs = {
+                    "model": current_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                }
+                if self._provider == "openrouter":
+                    kwargs["extra_headers"] = {
                         "HTTP-Referer": "https://github.com/DataTalksClub",
                         "X-Title": "DataTalksClub Projects",
-                    },
-                    model=current_model,
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                )
+                    }
+                response = self.client.chat.completions.create(**kwargs)
                 if not response.choices:
                     raise ValueError("Empty choices in response")
-                content = response.choices[0].message.content
+                msg = response.choices[0].message
+                content = msg.content or ""
+                # Reasoning models (e.g., deepseek-reasoner) may consume all
+                # tokens on chain-of-thought, leaving content empty. Keep
+                # doubling the token budget until the final answer fits.
+                reasoning = getattr(msg, 'reasoning_content', None)
+                while reasoning and not content and kwargs["max_tokens"] < 4096:
+                    kwargs["max_tokens"] = min(kwargs["max_tokens"] * 2, 4096)
+                    response = self.client.chat.completions.create(**kwargs)
+                    msg = response.choices[0].message
+                    content = msg.content or ""
+                    reasoning = getattr(msg, 'reasoning_content', None)
                 return content, response.usage
             except Exception as e:
                 error_str = str(e)
@@ -105,32 +153,34 @@ Generate 5 distinct domain-focused titles, each on a new line:
                     # Extract retry-after if present, else back off exponentially
                     wait = 60 * (2 ** min(attempt, 3))
                     next_model = model_queue[(attempt + 1) % len(model_queue)]
-                    tqdm.write(
+                    print(
                         f"⚠️  Rate limited on {current_model} (attempt {attempt+1}/{max_retries})"
-                        f" — waiting {wait}s, then trying {next_model}"
+                        f" — waiting {wait}s, then trying {next_model}",
+                        flush=True,
                     )
                     if not is_last:
                         time.sleep(wait)
                 elif "404" in error_str:
                     next_model = model_queue[(attempt + 1) % len(model_queue)]
-                    tqdm.write(
-                        f"❌ Model not found: {current_model} — switching to {next_model}"
+                    print(
+                        f"❌ Model not found: {current_model} — switching to {next_model}",
+                        flush=True,
                     )
                     if not is_last:
                         time.sleep(2)
                 else:
-                    tqdm.write(f"❌ LLM error on {current_model} (attempt {attempt+1}/{max_retries}): {error_str[:120]}")
+                    print(f"❌ LLM error on {current_model} (attempt {attempt+1}/{max_retries}): {error_str[:200]}", flush=True)
                     if not is_last:
                         time.sleep(5)
 
                 if is_last:
-                    tqdm.write(f"💀 All {max_retries} attempts failed for model queue {model_queue}")
+                    print(f"💀 All {max_retries} attempts failed for model queue {model_queue}", flush=True)
                     return None, None
         return None, None
 
     def generate_summary(self, content):
         prompt_summary = f"Summarize the following GitHub project content in two sentences, focusing on its main purpose and key features:\n{content}"
-        summary, _ = self.llm(prompt_summary, max_tokens=100)
+        summary, _ = self.llm(prompt_summary, max_tokens=300)
         return summary.strip() if summary else ""
 
     def generate_multiple_titles(self, project_url, summary, deployment_type=None):

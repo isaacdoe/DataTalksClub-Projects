@@ -99,4 +99,6 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0"]
 def mock_env_vars(monkeypatch):
     """Set up mock environment variables."""
     monkeypatch.setenv('MY_GITHUB_TOKEN', 'test_github_token')
+    monkeypatch.setenv('LLM_PROVIDER', 'openrouter')
     monkeypatch.setenv('OPENROUTER_API_KEY', 'test_openrouter_key')
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test_deepseek_key')

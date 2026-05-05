@@ -1,5 +1,6 @@
 """Unit tests for OpenAIAPI."""
 
+import os
 from unittest.mock import Mock, MagicMock, patch
 
 import pytest
@@ -344,15 +345,14 @@ class TestDefaultClassification:
         assert 'Could not classify' in result['deployment_reason']
 
 
-class TestClientTimeout:
-    """Tests for API client timeout configuration."""
+class TestClientProvider:
+    """Tests for multi-provider client configuration."""
 
     @patch('utils.openai_api.OpenAI')
     def test_client_has_timeout(self, mock_openai_class):
         """Test that OpenAI client is initialized with timeout."""
-        api = OpenAIAPI(api_key="test-key")
+        OpenAIAPI(api_key="test-key")
 
-        # Verify OpenAI was called with timeout parameter
         mock_openai_class.assert_called_once()
         call_kwargs = mock_openai_class.call_args[1]
 
@@ -360,9 +360,32 @@ class TestClientTimeout:
         assert call_kwargs['timeout'] == 60.0
 
     @patch('utils.openai_api.OpenAI')
-    def test_client_uses_openrouter_base_url(self, mock_openai_class):
-        """Test that client uses OpenRouter base URL."""
-        api = OpenAIAPI(api_key="test-key")
+    def test_default_provider_is_openrouter(self, mock_openai_class):
+        """Test that default provider is OpenRouter."""
+        with patch.dict(os.environ, {}, clear=True):
+            api = OpenAIAPI(api_key="test-key")
 
+        assert api._provider == "openrouter"
         call_kwargs = mock_openai_class.call_args[1]
         assert call_kwargs['base_url'] == "https://openrouter.ai/api/v1"
+
+    @patch('utils.openai_api.OpenAI')
+    def test_deepseek_provider_config(self, mock_openai_class):
+        """Test that deepseek provider uses correct base URL and key."""
+        with patch.dict(
+            os.environ,
+            {
+                'LLM_PROVIDER': 'deepseek',
+                'DEEPSEEK_API_KEY': 'sk-deepseek-test',
+                'DEEPSEEK_MODEL': 'deepseek-v4-flash',
+            },
+            clear=True,
+        ):
+            api = OpenAIAPI()
+
+        assert api._provider == "deepseek"
+        assert api.default_model == "deepseek-v4-flash"
+        assert api.fallback_models == ["deepseek-v4-flash"]
+        call_kwargs = mock_openai_class.call_args[1]
+        assert call_kwargs['base_url'] == "https://api.deepseek.com/v1"
+        assert call_kwargs['api_key'] == "sk-deepseek-test"

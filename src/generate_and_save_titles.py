@@ -35,7 +35,7 @@ def main():
     print("Generating summaries and titles...")
     # Initialize APIs
     github_api = GitHubAPI(os.environ.get('MY_GITHUB_TOKEN'))
-    openai_api = OpenAIAPI(os.environ.get('OPENAI_API_KEY'))
+    openai_api = OpenAIAPI()
     print(f"Debug: Github API key is {github_api}")
     print(f"Debug: OpenAI API key is {openai_api}")
     print(f"Total URLs to Process: {len(csv_handler.df)}")

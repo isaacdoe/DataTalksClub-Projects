@@ -511,3 +511,27 @@ class TestEnvVarCheck:
             error_msg = str(exc_info.value)
             assert "MY_GITHUB_TOKEN" in error_msg
             assert "OPENROUTER_API_KEY" in error_msg
+
+    def test_raises_when_deepseek_key_missing(self):
+        """Test that missing DEEPSEEK_API_KEY raises when provider is deepseek."""
+        with patch.dict(
+            os.environ,
+            {'MY_GITHUB_TOKEN': 'token', 'LLM_PROVIDER': 'deepseek'},
+            clear=True,
+        ):
+            with pytest.raises(EnvironmentError, match="DEEPSEEK_API_KEY"):
+                _check_env_vars()
+
+    def test_passes_when_deepseek_vars_set(self):
+        """Test that no error is raised when deepseek vars are set."""
+        with patch.dict(
+            os.environ,
+            {
+                'MY_GITHUB_TOKEN': 'token',
+                'LLM_PROVIDER': 'deepseek',
+                'DEEPSEEK_API_KEY': 'sk-test',
+            },
+            clear=True,
+        ):
+            # Should not raise
+            _check_env_vars()

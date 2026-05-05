@@ -200,14 +200,23 @@ def main():
         missing_vars = []
         if not os.environ.get("MY_GITHUB_TOKEN"):
             missing_vars.append("MY_GITHUB_TOKEN")
-        if not os.environ.get("OPENROUTER_API_KEY"):
-            missing_vars.append("OPENROUTER_API_KEY")
+
+        provider = os.environ.get("LLM_PROVIDER", "openrouter").lower()
+        if provider == "deepseek":
+            if not os.environ.get("DEEPSEEK_API_KEY"):
+                missing_vars.append("DEEPSEEK_API_KEY")
+        else:
+            if not os.environ.get("OPENROUTER_API_KEY"):
+                missing_vars.append("OPENROUTER_API_KEY")
 
         if missing_vars:
             print(f"❌ Missing environment variables: {', '.join(missing_vars)}")
             print("   Set them before running the pipeline:")
             print("   export MY_GITHUB_TOKEN='your_token'")
-            print("   export OPENROUTER_API_KEY='your_key'")
+            if "DEEPSEEK_API_KEY" in missing_vars:
+                print("   export DEEPSEEK_API_KEY='your_key'")
+            else:
+                print("   export OPENROUTER_API_KEY='your_key'")
             sys.exit(1)
 
     runner = PipelineRunner(limit=args.limit, project_url=args.project_url, workers=args.workers)

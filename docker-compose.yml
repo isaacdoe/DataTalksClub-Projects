@@ -5,9 +5,12 @@ services:
       # Mount Data folder so results persist on your machine
       - ./Data:/app/Data
     environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-openrouter}
       - MY_GITHUB_TOKEN=${MY_GITHUB_TOKEN}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - DEFAULT_MODEL=${DEFAULT_MODEL:-tencent/hy3-preview:free}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-}
     # Override command as needed (see Makefile for shortcuts)
 
   streamlit:
